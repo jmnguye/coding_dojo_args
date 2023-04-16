@@ -17,7 +17,11 @@ def get_args(schema_definition) -> int:
     return int(schema_definition[0])
 
 def get_flags(schema_definition) -> List[str]:
-    return list(schema_definition.split(' ')[1])
+    flags = schema_definition.split(' ')[1]
+    return flags.split(',')
+
+if __name__ == "__main__":
+    get_flags(schema_definition)
 
 def test_get_schema_definition():
     assert schema_definition is not None
