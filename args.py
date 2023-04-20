@@ -11,24 +11,30 @@ Once schema defined, the programe should send the list to the parser
 
 The parser will check
 '''
-schema_definition = "3 l,p,d"
 
-def get_args(schema_definition) -> int:
-    return int(schema_definition[0])
+class Parser():
+    
+    def load(self, schema):
+        self.get_args(schema)
+           
+    def get_args(self, schema) -> int:
+        return int(schema[0])
 
-def get_flags(schema_definition) -> List[str]:
-    flags = schema_definition.split(' ')[1]
-    return flags.split(',')
+    def get_flags(self, schema) -> List[str]:
+        flags = schema.split(' ')[1]
+        return flags.split(',')
 
-if __name__ == "__main__":
-    get_flags(schema_definition)
+@pytest.fixture
+def parser():
+    parser = Parser()
+    return parser
 
-def test_get_schema_definition():
-    assert schema_definition is not None
+def test_parser_read_number_args(parser):
+    schema = "3 l,p,d"
+    parser.load(schema)
+    assert 3 == parser.get_args(schema)
 
-def test_request_3_args():
-    schema_definition = "3"
-    assert 3 == get_args(schema_definition)
-
-def test_get_flags():
-    assert 3 == len(get_flags(schema_definition))
+def test_parser_miss_number_args(parser):
+    schema = "l,p,d"
+    with pytest.raises(ValueError):
+        parser.get_args(schema)
