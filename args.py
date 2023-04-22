@@ -18,26 +18,71 @@ string : param should be followed by some string
 
 if values are not filled, default value are applied '''
 
+class unmanagedType(Exception):
+    pass
+
 class Parser():
     def __init__(self, schema: dict):
         self.schema = schema
+        self.data_input_list = None
 
-    def check(self, data: str): 
-        if data is None:
-            return " ".join([ f"-{key} {self.schema.get(key)}" for key in self.schema.keys() ])
-            
-        for entry in data.split():
-            if entry in [ f"-{key}" for key in self.schema.keys() ]:
-                value = next()
+    def parsing(self, data: str):
+        self.data_input_list = data.split()
+        for data_entry in self.data_input_list:
+            if self.is_a_flag(data_entry):
+                if self.has_all_data_match_key_from_schema(data_entry) is False:
+                    return False
+                if self.data_has_double_flag(data_entry) is True:
+                    return False
+
+                value_type = self.flag_value_type(data_entry)
+                flag_value = self.get_value_from(data_entry)
+
+                if flag_value is None:
+                    if not value_type is bool:
+                        return False
+
+        return True        
+
+    def flag_value_type(self, data_entry):
+        for _type in bool, str, int:
+            if isinstance(self.schema[data_entry], _type):
+                return _type
+        raise unmanagedType
+        
+
+    def get_value_from(self, data_entry):
+        try:
+            flag_value =  self.data_input_list[ self.data_input_list.index(data_entry) + 1 ]
+            return flag_value
+        except IndexError as e:
+            return None
+
+    def is_a_flag(self, data_entry):
+        if self.data_input_list.index(data_entry) % 2 == 0:
+            return True
+        return False
+
+    def has_all_data_match_key_from_schema(self, data_entry):
+        if data_entry in self.schema.keys():
+            pass
+        else:
+            return False
+        return True
+
+    def data_has_double_flag(self, data_entry):
+        if str(self.data_input_list).count(data_entry) > 1:
+            return True
+        return False
 
 
         
 @pytest.fixture
 def parser():
     schema = {
-        "l": False,
-        "p": 0,
-        "d": ""
+        "-l": False,
+        "-p": 0,
+        "-d": ""
     }
     parser = Parser(schema)
     return parser
@@ -45,11 +90,18 @@ def parser():
 def test_is_schema_a_dict(parser):
     assert isinstance(parser.schema, dict)
 
-def test_get_params_without_data(parser):
-    assert "-l" in parser.check("")
+def test_data_match_key_from_schema(parser):
+    assert parser.parsing("-d /tmp") == True
 
-def test_get_params_value_without_data(parser):
-    assert "-p 0" in parser.check("")
+def test_data_one_value_dont_match_key_from_schema(parser):
+    assert parser.parsing("-d toto -q") == False
 
-def test_get_custom_params_from_data(parser):
-    assert "-d /tmp" in parser.check("-d /tmp")
+def test_double_flags_are_invalid(parser):
+    assert parser.parsing("-d toto -d") == False
+
+def test_value_is_missing_for_a_flag_that_require_it(parser):
+    assert parser.parsing("-d") == False
+
+def test_value_is_missing_for_bool_flag_but_its_ok(parser):
+    assert parser.parsing("-l") == True
+
