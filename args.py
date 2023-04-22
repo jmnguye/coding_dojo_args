@@ -10,47 +10,46 @@ write a parser that takes a schema as input detailing:
 Once schema defined, the programe should send the list to the parser
 
 The parser will check
-'''
 
-class NumberOfArgsDontMatchNumberOfFlag(Exception):
-    pass
+define types of parameters :
+boolean : if the param is there , true, else false
+number : param should be followed by a number
+string : param should be followed by some string
+
+if values are not filled, default value are applied '''
 
 class Parser():
-    
-    def load(self, schema):
-        number_of_args = self.get_args(schema)
-        number_of_flags = len(self.get_flags(schema))
-        if number_of_args != number_of_flags:
-            raise NumberOfArgsDontMatchNumberOfFlag
+    def __init__(self, schema: dict):
+        self.schema = schema
 
-           
-    def get_args(self, schema) -> int:
-        return int(schema[0])
+    def check(self, data: str): 
+        if data is None:
+            return " ".join([ f"-{key} {self.schema.get(key)}" for key in self.schema.keys() ])
+            
+        for entry in data.split():
+            if entry in [ f"-{key}" for key in self.schema.keys() ]:
+                value = next()
 
-    def get_flags(self, schema) -> List[str]:
-        flags = schema.split(' ')[1]
-        return flags.split(',')
 
+        
 @pytest.fixture
 def parser():
-    parser = Parser()
+    schema = {
+        "l": False,
+        "p": 0,
+        "d": ""
+    }
+    parser = Parser(schema)
     return parser
 
-def test_read_number_by(parser):
-    schema = "3 l,p,d"
-    assert 3 == parser.get_args(schema)
+def test_is_schema_a_dict(parser):
+    assert isinstance(parser.schema, dict)
 
-def test_miss_number_by(parser):
-    schema = "l,p,d"
-    with pytest.raises(ValueError):
-        parser.get_args(schema)
+def test_get_params_without_data(parser):
+    assert "-l" in parser.check("")
 
-def test_read_flags_by(parser):
-    schema = "3 l,p,d"
-    assert ['l', 'p', 'd'] == parser.get_flags(schema)
+def test_get_params_value_without_data(parser):
+    assert "-p 0" in parser.check("")
 
-def test_number_of_args_match_number_of_flags(parser):
-    schema = "3 l,p,d,t"
-    with pytest.raises(NumberOfArgsDontMatchNumberOfFlag):
-        parser.load(schema)
-
+def test_get_custom_params_from_data(parser):
+    assert "-d /tmp" in parser.check("-d /tmp")
