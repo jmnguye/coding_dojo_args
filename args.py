@@ -41,8 +41,12 @@ class Parser():
                 if flag_value is None:
                     if not value_type is bool:
                         return False
-
-        return True        
+                else:
+                    if value_type is str and not flag_value.replace('/', '').isalpha():
+                        return False
+                    if value_type is int and not flag_value.isdigit():
+                        return False
+        return True
 
     def flag_value_type(self, data_entry):
         for _type in bool, str, int:
@@ -105,3 +109,32 @@ def test_value_is_missing_for_a_flag_that_require_it(parser):
 def test_value_is_missing_for_bool_flag_but_its_ok(parser):
     assert parser.parsing("-l") == True
 
+def test_int_flag_with_int_value(parser):
+    assert parser.parsing("-p 8080") == True
+
+def test_int_flag_without_int_value(parser):
+    assert parser.parsing("-p /tmp") == False
+
+def test_one_of_flag_has_wrong_parameter_type(parser):
+    assert parser.parsing("-d /totot -p /tmp") == False
+
+def test_two_ok_parameters(parser):
+    assert parser.parsing("-d /totot -p 809") == True
+
+def test_three_ok_parameters(parser):
+    assert parser.parsing("-d /totot -p 809 -l") == True
+
+def test_three_nok_parameters(parser):
+    assert parser.parsing("-d 80 -p 809 -l") == False
+
+def test_unknown_flag(parser):
+    assert parser.parsing("-k jige") == False
+
+def test_with_explicit_bool_false_value(parser):
+    assert parser.parsing("-l False") == True
+
+def test_with_explicit_bool_true_value(parser):
+    assert parser.parsing("-l True") == True
+
+def test_empty(parser):
+    assert parser.parsing("") == True
